@@ -107,6 +107,11 @@ class MainWindow(QMainWindow):
         self.cam_button2.setStyleSheet("color: rgb(255, 0, 0); font-weight: bold")
         self.cam_button2.clicked.connect(self.shotCameras)
         #--------------------------------------------------------------------------------------------
+        # 1.1.3 -- shot cameras push button
+        self.cam_button3 = QPushButton('Save Pictures')
+        self.cam_button3.setStyleSheet("color: rgb(15, 100, 220); font-weight: bold")
+        self.cam_button3.clicked.connect(self.saveSinglePictures)
+        #--------------------------------------------------------------------------------------------
         # 1.1.3 -- top camera parameters label
         camtop_edits_lab = QLabel('Top camera parameters:')
         camtop_edits_lab.setStyleSheet("color: black; font-weight: bold")
@@ -203,17 +208,18 @@ class MainWindow(QMainWindow):
         cam_layout.addWidget(cam_label,        0, 0,  1, 1)
         cam_layout.addWidget(self.cam_button1, 1, 1,  1, 1)
         cam_layout.addWidget(self.cam_button2, 2, 1,  1, 1)
-        cam_layout.addWidget(camtop_edits_lab,        3, 1,  1, 1)
-        cam_layout.addWidget(camtop_edit1_cont,       4, 1,  1, 1)
-        cam_layout.addWidget(camtop_edit2_cont,       5, 1,  1, 1)
-        cam_layout.addWidget(camtop_edit3_cont,       6, 1,  1, 1)
-        cam_layout.addWidget(camhor_edits_lab,        7, 1,  1, 1)
-        cam_layout.addWidget(camhor_edit1_cont,       8, 1,  1, 1)
-        cam_layout.addWidget(camhor_edit2_cont,       9, 1,  1, 1)
-        cam_layout.addWidget(camhor_edit3_cont,      10, 1,  1, 1)
+        cam_layout.addWidget(self.cam_button3, 3, 1,  1, 1)
+        cam_layout.addWidget(camtop_edits_lab,        4, 1,  1, 1)
+        cam_layout.addWidget(camtop_edit1_cont,       5, 1,  1, 1)
+        cam_layout.addWidget(camtop_edit2_cont,       6, 1,  1, 1)
+        cam_layout.addWidget(camtop_edit3_cont,       7, 1,  1, 1)
+        cam_layout.addWidget(camhor_edits_lab,        8, 1,  1, 1)
+        cam_layout.addWidget(camhor_edit1_cont,       9, 1,  1, 1)
+        cam_layout.addWidget(camhor_edit2_cont,       10, 1,  1, 1)
+        cam_layout.addWidget(camhor_edit3_cont,      11, 1,  1, 1)
 
-        cam_layout.addWidget(cam_plots_lab,        11, 1,  1, 1)
-        cam_layout.addWidget(cam_combo1_cont,      12, 1,  1, 1)
+        cam_layout.addWidget(cam_plots_lab,        12, 1,  1, 1)
+        cam_layout.addWidget(cam_combo1_cont,      13, 1,  1, 1)
 
         cam_layout.addWidget(self.exe_button1,     14, 1,  1, 1)
         cam_layout.addWidget(self.exe_button2,     15, 1,  1, 1)
@@ -322,11 +328,11 @@ class MainWindow(QMainWindow):
         devs = tlf.EnumerateDevices([di,])
 
         if (devs[0].GetSerialNumber == '40008690'):
-            self.camtop = py.InstantCamera(tlf.CreateDevice(devs[0]))
-            self.camhor = py.InstantCamera(tlf.CreateDevice(devs[1]))
-        else:
             self.camtop = py.InstantCamera(tlf.CreateDevice(devs[1]))
-            self.camhor = py.InstantCamera(tlf.CreateDevice(devs[0]))    
+            self.camhor = py.InstantCamera(tlf.CreateDevice(devs[0]))
+        else:
+            self.camtop = py.InstantCamera(tlf.CreateDevice(devs[0]))
+            self.camhor = py.InstantCamera(tlf.CreateDevice(devs[1]))    
 
         for cam in [self.camtop, self.camhor]:
             cam.Open()
@@ -348,11 +354,11 @@ class MainWindow(QMainWindow):
         ax1 = self.cam_fig.add_axes([0, 0.50, 1, .47])
         ax1.imshow(self.img1, cmap = self.cmap)
         ax1.axis('off')
-        ax1.set_title('Top camera')
+        ax1.set_title('Unpolarized camera')
         ax2 = self.cam_fig.add_axes([0, 0, 1, .47])
         ax2.imshow(self.img2, cmap = self.cmap)
         ax2.axis('off')
-        ax2.set_title('Horizontal camera')
+        ax2.set_title('Polarized camera')
         self.cam_canvas.draw()
         self.printMsg('New camera shots printed to screen', self.log)
 
@@ -365,6 +371,16 @@ class MainWindow(QMainWindow):
             self.img2 = Image.fromarray(res2.Array)
         self.plotPictures()
 
+    def saveSinglePictures(self):
+        now = datetime.now().strftime("%Y-%m-%dh%H_%M_%S")
+        path1 = self.outputpath +'imgunpol_'+now+'.tiff' 
+        path2 = self.outputpath +'imgpol_'  +now+'.tiff' 
+        self.img1.save(path1)
+        self.printMsg('image '+path1+' saved', self.log)
+        self.img2.save(path2)
+        self.printMsg('image '+path2+' saved', self.log)            
+
+
     def setGainTop(self):
         gain = float(self.camtop_lineedit1.text())
         gainmax = self.camtop.Gain.GetMax()
@@ -374,7 +390,7 @@ class MainWindow(QMainWindow):
         if (gain < gainmin):
             gain = gainmin
         self.camtop.Gain.SetValue(gain)
-        self.printMsg('Top camera gain set to'+str(gain), self.log)
+        self.printMsg('Top camera gain set to '+str(gain), self.log)
 
     def setGainHor(self):
         gain = float(self.camhor_lineedit1.text())
@@ -385,33 +401,33 @@ class MainWindow(QMainWindow):
         if (gain < gainmin):
             gain = gainmin
         self.camhor.Gain.SetValue(gain)
-        self.printMsg('Horizontal camera gain set to' + str(gain), self.log)
+        self.printMsg('Horizontal camera gain set to ' + str(gain), self.log)
 
     def setGammaTop(self):
         gamma = float(self.camtop_lineedit2.text())
         self.camtop.Gamma.SetValue(gamma)
-        self.printMsg('Top camera gamma set to' + str(gamma), self.log)
+        self.printMsg('Top camera gamma set to ' + str(gamma), self.log)
 
     def setGammaHor(self):
         gamma = float(self.camhor_lineedit2.text())
         self.camhor.Gamma.SetValue(gamma) 
-        self.printMsg('Horizontal camera gamma set to' + str(gamma), self.log)
+        self.printMsg('Horizontal camera gamma set to ' + str(gamma), self.log)
 
     def setExpTimeTop(self):
         exptime = float(self.camtop_lineedit3.text())
         self.camtop.ExposureTime.SetValue(exptime) 
-        self.printMsg('Exposure time set to' + str(exptime), self.log)
+        self.printMsg('Exposure time set to ' + str(exptime), self.log)
 
     def setExpTimeHor(self):
         exptime = float(self.camhor_lineedit3.text())
         self.camhor.ExposureTime.SetValue(exptime)
-        self.printMsg('Exposure time set to' + str(exptime), self.log)
+        self.printMsg('Exposure time set to ' + str(exptime), self.log)
 
     def setColormap(self):
         cmap = self.cam_combobox1.currentText()
         self.cmap = cmap
         self.plotPictures()
-        self.printMsg('Colormap updated to'+cmap, self.log)
+        self.printMsg('Colormap updated to '+cmap, self.log)
 
     def initArduino(self):
         self.hdr_button1.setEnabled(False)
